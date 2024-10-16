@@ -1,7 +1,7 @@
 question_list = """
 SELECT questionid ID, questiontext Question
 FROM Question
-WHERE questionid IN (1,2,33,92)
+WHERE questionid IN (1,2,33,115,116)
 """
 
 age_1 = """
@@ -339,7 +339,7 @@ top_4_disorders = """
 WITH diagnosis AS (SELECT a.SurveyID survey_id, a.UserID user_id,
 
             CASE
-                WHEN a.AnswerText LIKE '%autism%' OR a.AnswerText LIKE '%Autism%' OR a.AnswerText LIKE '%Asperge%' THEN 'Autism/Aspergers'
+                WHEN a.AnswerText LIKE '%autism%' OR a.AnswerText LIKE '%Autism%' OR a.AnswerText LIKE '%Asperge%' THEN 'Autism Spectrum Disorder'
                 WHEN a.AnswerText LIKE '%Mood Disorder%' OR a.AnswerText LIKE '%Depression%' OR a.AnswerText = 'Seasonal Affective Disorder' or a.AnswerText = 'Suicidal Ideation' THEN 'Mood Disorders'
                 WHEN a.AnswerText = 'Pervasive Developmental health disorder (Not Otherwise Specified)' OR a.AnswerText = 'PDD-NOS' THEN 'Pervasive Developmental health disorder (Not Otherwise Specified)' 
                 WHEN a.AnswerText = 'Post-traumatic Stress Disorder' OR a.AnswerText LIKE '%PTSD%' THEN 'Post-traumatic Stress Disorder'
@@ -390,7 +390,7 @@ WITH diagnosis AS (SELECT a.SurveyID survey_id, a.UserID user_id,
             WHERE q.questiontext IN ('If yes, what condition(s) have you been diagnosed with?','If maybe, what condition(s) do you believe you have?')
                 AND a.AnswerText != '-1' AND a.AnswerText != "We're all hurt, right?!" AND a.AnswerText != 'Tinnitus'),
     counts AS (SELECT
-            survey_id, diagnosis, COUNT(*)
+            survey_id, diagnosis, COUNT(*) number
             FROM diagnosis
             GROUP BY 1,2
             ORDER BY 3 DESC
@@ -424,7 +424,7 @@ ON a.survey_id = d.survey_id AND a.user_id = d.user_id
 JOIN counts c
 ON c.survey_id = d.survey_id AND c.diagnosis = d.diagnosis
 GROUP BY 1,2,3
-ORDER BY a.ordering, 4 DESC
+ORDER BY a.ordering, c.number DESC, 4 DESC
 """
 
 top_4_disorders_gender = """
@@ -450,7 +450,7 @@ WITH diagnosis AS (SELECT a.SurveyID survey_id, a.UserID user_id,
             WHERE q.questiontext IN ('If yes, what condition(s) have you been diagnosed with?','If maybe, what condition(s) do you believe you have?')
                 AND a.AnswerText != '-1' AND a.AnswerText != "We're all hurt, right?!" AND a.AnswerText != 'Tinnitus'),
     counts AS (SELECT
-            survey_id, diagnosis, COUNT(*)
+            survey_id, diagnosis, COUNT(*) number
             FROM diagnosis
             GROUP BY 1,2
             ORDER BY 3 DESC
@@ -481,85 +481,5 @@ ON g.survey_id = d.survey_id AND g.user_id = d.user_id
 JOIN counts c
 ON c.survey_id = d.survey_id AND c.diagnosis = d.diagnosis
 GROUP BY 1,2,3
-ORDER BY g.ordering, 4 DESC
-"""
-
-top_4_disorders_age_gender = """
-WITH diagnosis AS (SELECT a.SurveyID survey_id, a.UserID user_id,
-            CASE
-                WHEN a.AnswerText LIKE '%autism%' OR a.AnswerText LIKE '%Autism%' OR a.AnswerText LIKE '%Asperge%' THEN 'Autism/Aspergers'
-                WHEN a.AnswerText LIKE '%Mood Disorder%' OR a.AnswerText LIKE '%Depression%' OR a.AnswerText = 'Seasonal Affective Disorder' or a.AnswerText = 'Suicidal Ideation' THEN 'Mood Disorders'
-                WHEN a.AnswerText = 'Pervasive Developmental health disorder (Not Otherwise Specified)' OR a.AnswerText = 'PDD-NOS' THEN 'Pervasive Developmental health disorder (Not Otherwise Specified)' 
-                WHEN a.AnswerText = 'Post-traumatic Stress Disorder' OR a.AnswerText LIKE '%PTSD%' THEN 'Post-traumatic Stress Disorder'
-                WHEN a.AnswerText = 'Addictive Disorder' OR a.AnswerText = 'Substance Use Disorder' OR a.AnswerText = 'Sexual addiction' THEN 'Addictive Disorders'
-                WHEN a.AnswerText = 'Psychotic Disorder (Schizophrenia, Schizoaffective, etc)' OR a.AnswerText = 'Schizotypal Personality Disorder' THEN 'Addictive Disorders'
-                WHEN a.AnswerText = 'Attention Deficit Hyperactivity Disorder' OR a.AnswerText = 'ADD (w/o Hyperactivity)' OR a.AnswerText LIKE '%ADHD%' THEN 'ADHD'
-                WHEN a.AnswerText LIKE '%Burn%' THEN 'Burnout' 
-                WHEN a.AnswerText LIKE '%Anxiety%' OR a.AnswerText LIKE '%anxiety %' THEN 'Anxiety Disorders'
-                WHEN a.AnswerText = 'Gender Dysphoria' OR a.AnswerText = 'Transgender' OR a.AnswerText = 'Gender Identity Disorder' THEN 'Gender Identity Disorder/Gender Dyshoria'
-                WHEN a.AnswerText LIKE '%epersonal%' THEN 'Depersonalization disorder'
-                ELSE a.AnswerText
-            END AS diagnosis
-            FROM Answer a
-            JOIN Question q
-            ON a.QuestionID = q.questionid
-
-            WHERE q.questiontext IN ('If yes, what condition(s) have you been diagnosed with?','If maybe, what condition(s) do you believe you have?')
-                AND a.AnswerText != '-1' AND a.AnswerText != "We're all hurt, right?!" AND a.AnswerText != 'Tinnitus'),
-    counts AS (SELECT
-            survey_id, diagnosis, COUNT(*)
-            FROM diagnosis
-            GROUP BY 1,2
-            ORDER BY 3 DESC
-            LIMIT 4),
-    genders AS (SELECT a.SurveyID survey_id, a.UserID user_id,
-                            CASE
-                                WHEN LOWER(a.AnswerText) = 'male' THEN 'male'
-                                WHEN LOWER(a.AnswerText) = 'female' THEN 'female'
-                                WHEN a.AnswerText IN ('43',  '-1') THEN 'invalid'
-                                ELSE 'TGNB'
-                            END AS gender,
-                            CASE
-                                WHEN LOWER(a.AnswerText) = 'male' THEN 2
-                                WHEN LOWER(a.AnswerText) = 'female' THEN 1
-                                WHEN a.AnswerText IN ('43',  '-1') THEN 4
-                                ELSE 3
-                            END AS ordering
-                    FROM Answer a
-                    JOIN Question q
-                    ON a.QuestionID = q.questionid
-                    WHERE q.questionid = 2
-                        AND gender != 'invalid' ) ,
-    ages AS (SELECT a.SurveyID survey_id, a.UserID user_id, a.AnswerText answer,
-            CASE 
-                WHEN CAST(a.AnswerText AS int) BETWEEN 15 AND 25 THEN 'Under 25'
-                WHEN CAST(a.AnswerText AS int) BETWEEN 26 AND 35 THEN '26-35'
-                WHEN CAST(a.AnswerText AS int) BETWEEN 36 AND 45 THEN '36-45'
-                WHEN CAST(a.AnswerText AS int) BETWEEN 46 AND 55 THEN '46-55'
-                WHEN CAST(a.AnswerText AS int) BETWEEN 56 AND 67 THEN 'Over 55'
-                ELSE 'Other'
-            END AS age_group,
-            CASE 
-                WHEN CAST(a.AnswerText AS int) BETWEEN 15 AND 25 THEN 1
-                WHEN CAST(a.AnswerText AS int) BETWEEN 26 AND 35 THEN 2
-                WHEN CAST(a.AnswerText AS int) BETWEEN 36 AND 45 THEN 3
-                WHEN CAST(a.AnswerText AS int) BETWEEN 46 AND 55 THEN 4
-                WHEN CAST(a.AnswerText AS int) BETWEEN 56 AND 67 THEN 5
-                ELSE 'Other'
-            END AS ordering
-            FROM Answer a
-            JOIN Question q
-            ON a.QuestionID = q.questionid
-            WHERE q.questionid = 1 AND age_group != 'Other')                
-
-SELECT d.survey_id, d.diagnosis, g.gender, a.age_group,COUNT(*)
-FROM diagnosis d
-JOIN ages a
-ON a.survey_id = d.survey_id AND a.user_id = d.user_id
-JOIN genders g
-ON g.survey_id = d.survey_id AND g.user_id = d.user_id
-JOIN counts c
-ON c.survey_id = d.survey_id AND c.diagnosis = d.diagnosis
-GROUP BY 1,2,3,4
-ORDER BY a.ordering, g.ordering, 5 DESC
+ORDER BY g.ordering, c.number DESC, 4 DESC
 """
